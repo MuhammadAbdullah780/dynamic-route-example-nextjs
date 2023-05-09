@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 // Components
 import DisplayResult from "@/containers/DisplayResult";
 import FromHeading from "@/common/components/FormHeading";
 // Data imports
 import Data from "@/Data";
-import { useRouter } from "next/router";
 
 // ENUMS
 export enum ValueEnum {
@@ -17,13 +17,13 @@ export enum ValueEnum {
 
 // TYPES
 type Values = {
-  [ValueEnum.ON_SALE]: boolean | undefined;
+  [ValueEnum.ON_SALE]: boolean;
   [ValueEnum.PRICE]: number | undefined;
   [ValueEnum.COUNTRY]: string | undefined;
   [ValueEnum.STATUS]: string | undefined;
 };
 
-type resultData = {
+type ResultData = {
   [ValueEnum.ID]: string;
   [ValueEnum.ON_SALE]: boolean;
   [ValueEnum.PRICE]: number;
@@ -32,6 +32,10 @@ type resultData = {
 }[];
 
 const index = () => {
+  // HOOK INSTANCES
+  const router = useRouter();
+
+  // DUMMY DATA
   const countryList = [
     "Select Country",
     "US",
@@ -45,40 +49,81 @@ const index = () => {
     "PK",
   ];
   const statusList = ["Select Status", "for-sale", "for-rent"];
-  const  router = useRouter()
 
+  // USESTATE HOOKS
   // STATE VARIABLES
-  const [result, setResult] = useState<resultData>();
+  const [result, setResult] = useState<ResultData>();
   const [values, setValues] = useState<Values>({
-    [ValueEnum.ON_SALE]: Boolean(router.query.onSale) || undefined,
+    [ValueEnum.ON_SALE]: router.query.onSale === "true" ? true : false,
     [ValueEnum.PRICE]: Number(router.query.price) || 0,
-    [ValueEnum.COUNTRY]: router?.query?.country as string|| undefined,
-    [ValueEnum.STATUS]: router?.query?.country  as string|| undefined,
+    [ValueEnum.COUNTRY]: router?.query?.country as string,
+    [ValueEnum.STATUS]: router?.query?.status as string,
   });
 
+  // USE EFFECT HOOKS
+  // THIS USE-EFFECT WILL UPDATE THE STATE INITIALLY WHEN THE PAGE LOAD OR THE QUERY-PARAMS LOADS.
+  useEffect(() => {
+    if (router.isReady) {
+      setValues({
+        [ValueEnum.ON_SALE]: router?.query?.onSale === "true" ? true : false,
+        [ValueEnum.PRICE]: Number(router.query.price) || 0,
+        [ValueEnum.COUNTRY]: router?.query?.country as string,
+        [ValueEnum.STATUS]: router?.query?.status as string,
+      });
+    }
+  }, [router.isReady]);
 
-console.log(router.query.country)
-  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // USE-STATE TO FILTER OUT DATA
+  useEffect(() => {
+    if (
+      !router.query.country &&
+      !router.query.price &&
+      !router.query.status &&
+      !router.query.onSale
+    ) {
+      return setResult(Data);
+    }
     const filterHouses = Data.filter((item) =>
-      values.onSale ? item.onSale === values.onSale : true
+      router.query.onSale ? item.onSale === Boolean(router.query.onSale) : true,
     )
       .filter((item) =>
-        values.country ? item.country === values.country : true
+        router.query.country ? item.country === router.query.country : true,
       )
-      .filter((item) => (values.price ? item.price <= values.price : true))
-      .filter((item) => (values.status ? item.status === values.status : true));
+      .filter((item) =>
+        router.query.price ? item.price <= Number(router.query.price) : true,
+      )
+      .filter((item) =>
+        router.query.status ? item.status === router.query.status : true,
+      );
     setResult(filterHouses);
-    // e.target.reset()
-    setValues({
-      [ValueEnum.ON_SALE]: undefined,
-      [ValueEnum.PRICE]: 0,
-      [ValueEnum.COUNTRY]: undefined,
-      [ValueEnum.STATUS]: undefined,
-    })
+  }, [router.query, router.isReady]);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    let query: { [key: string]: string | string[] | number | boolean } = {};
+    if (values.price) {
+      query.price = values.price;
+    }
+    if (values.country) {
+      query.country = values.country;
+    }
+    if (values.status) {
+      query.status = values.status;
+    }
+    if (values.onSale) {
+      query.onSale = values.onSale;
+    }
+    router.push(
+      {
+        pathname: "/",
+        query: query,
+      },
+      undefined,
+      { shallow: true },
+    );
   };
 
-  const handleValuesChange = (key: string, value: Values[keyof Values]) => {
+  const handleValueshange = (key: string, value: Values[keyof Values]) => {
     setValues((prevState) => ({
       ...prevState,
       [key]: value,
@@ -92,8 +137,7 @@ console.log(router.query.country)
         <form
           method="POST"
           onSubmit={handleSubmit}
-          className="w-full flex items-start justify-center gap-5 flex-col "
-        >
+          className="w-full flex items-start justify-center gap-5 flex-col ">
           {/* INPUT FIELDS */}
 
           {/* SELECT INPUT */}
@@ -104,15 +148,16 @@ console.log(router.query.country)
             </label>
             <select
               name="country"
-              value={values.country === undefined  ? "Select Country" : values.country  }
+              value={
+                values.country === undefined ? "Select Country" : values.country
+              }
               onChange={({ target }) =>
-                handleValuesChange(
+                handleValueshange(
                   ValueEnum.COUNTRY,
-                  target.value === "Select Country" ? undefined : target.value
+                  target.value === "Select Country" ? undefined : target.value,
                 )
               }
-              className="bg-gray-50 border border-gray-300 min-w-full text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            >
+              className="bg-gray-50 border border-gray-300 min-w-full text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
               {countryList.map((item, i) => {
                 return <option key={i}>{item}</option>;
               })}
@@ -126,15 +171,16 @@ console.log(router.query.country)
             </label>
             <select
               name="status"
-              value={values.status === undefined  ? "Select Status" : values.status  }
+              value={
+                values.status === undefined ? "Select Status" : values.status
+              }
               onChange={({ target }) =>
-                handleValuesChange(
+                handleValueshange(
                   ValueEnum.STATUS,
-                  target.value === "Select Status" ? undefined : target.value
+                  target.value === "Select Status" ? undefined : target.value,
                 )
               }
-              className="bg-gray-50 border border-gray-300 min-w-full text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            >
+              className="bg-gray-50 border border-gray-300 min-w-full text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
               {statusList.map((item, i) => {
                 return <option key={i}>{item}</option>;
               })}
@@ -146,16 +192,15 @@ console.log(router.query.country)
             <input
               type="checkbox"
               name="onSale"
-              checked={values.onSale}
+              checked={values.onSale === true ? true : false}
               onChange={(e) =>
-                handleValuesChange(ValueEnum.ON_SALE, e.target.checked)
+                handleValueshange(ValueEnum.ON_SALE, e.target.checked)
               }
               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
             <label
               htmlFor="checked-checkbox"
-              className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-            >
+              className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
               On Sale
             </label>
           </div>
@@ -164,8 +209,7 @@ console.log(router.query.country)
           <div className="w-full">
             <label
               htmlFor="minmax-range"
-              className="block text-sm font-medium text-gray-900 dark:text-white"
-            >
+              className="block text-sm font-medium text-gray-900 dark:text-white">
               Price Range ({values.price})
             </label>
             <input
@@ -175,7 +219,7 @@ console.log(router.query.country)
               max={98000}
               value={values.price}
               onChange={({ target }) =>
-                handleValuesChange(ValueEnum.PRICE, Number(target.value))
+                handleValueshange(ValueEnum.PRICE, Number(target.value))
               }
               className="w-full h-2 bg-blue-400 rounded-lg appearance-none cursor-pointer"
             />
@@ -184,8 +228,7 @@ console.log(router.query.country)
           {/* SUBMIT BUTTON */}
           <button
             type="submit"
-            className="text-white w-full bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
-          >
+            className="text-white w-full bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">
             Submit
           </button>
         </form>

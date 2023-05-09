@@ -47,7 +47,6 @@ const index = ({ values }: Props) => {
                 <tbody>
                   {
                     values.map(item => {
-                      console.log(item.onSale)
                       return (
                         <tr className="bg-white dark:bg-gray-800">
                           <th
