@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 h1 {
-    font-size: 25px;
-    font-weight: 700;
+  font-size: 25px;
+  font-weight: 700;
 }
 
+.select-label {
+  @apply block mb-2 text-sm font-medium text-gray-900 dark:text-white;
+}

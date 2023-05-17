@@ -1,5 +1,4 @@
-import React from 'react'
-
+// Types
 type Props = {
   title:string
 }
